@@ -45,4 +45,10 @@ lead_emails.each do |email|
   end
 end
 
+## #Goals
+## => Have a contact name
+## => Have a contact number (if possible)
+## => Have a contact email (if possible)
+## => Lead Source = Inbound TPR
+
 client = Closeio::Client.new(CLOSEIO_API)
