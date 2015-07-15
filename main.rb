@@ -13,7 +13,19 @@ require 'active_support/all'
 #   - Read and parse emails
 #   - Create new tasks in close.io via API with data parsed from emails
 
-config_file = File.expand_path("~/.getaccepted.yml")
+def gen_new_lead_template
+  new_lead = {}
+
+  #new_lead['display_name'] = 'BlankNameError'
+  new_lead['status_id'] = 'stat_3h8Vm5jpZ72TZckGPAil86UKEhKE17SmsgcGOngTgNm'
+  new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'Inbound - TPR'}
+  new_lead['status_label'] = 'New'
+  new_lead['contacts'] = []
+
+  new_lead
+end
+
+config_file = File.expand_path('~/.getaccepted.yml')
 
 if File.exists?(config_file)
   config = YAML.load_file(config_file)
@@ -33,18 +45,30 @@ if USERNAME.nil? or PASSWORD.nil?
 end
 
 gmail = Gmail.connect(USERNAME, PASSWORD)
-some_time_ago = 24.hours.ago.strftime("%Y%m%d")
+some_time_ago = 24.hours.ago.strftime('%Y%m%d')
 lead_emails = gmail.inbox.search(gm: "subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
 
-lead_emails.each do |email|
-  attr = email.message.body.to_s.split("<br />").map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
+lead_emails.map! do |email|
+  email_body = email.message.body.to_s
+  attr = email.message.body.to_s.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
   attr = attr.inject({}) do |memo,x|
     x = x.split(':').map { |x| x.strip }
     memo[x[0]] = x[1]
     memo
   end
+  attr['email_body'] = email_body
+  attr
 end
 
+total_attr = []
+lead_emails.each do |email|
+  total_attr << email.keys
+end
+total_attr.flatten!
+total_attr.uniq!
+puts total_attr.join(', ')
+
+exit
 ## #Goals
 ## => Have a contact name
 ## => Have a contact number (if possible)
@@ -52,3 +76,27 @@ end
 ## => Lead Source = Inbound TPR
 
 client = Closeio::Client.new(CLOSEIO_API)
+
+lead_emails.each do |email|
+  new_lead = gen_new_lead_template
+
+  new_lead['custom']['Student First Name'] = email['StudentFirstName'] if email.has_key('StudentFirstName')
+  new_lead['custom']['Student Last Name']  = email['StudentLastName']  if email.has_key('StudentLastName')
+
+  if email.has_key('Phone1Number') or email.has_key('Email')
+    contact = {'emails'=>[],'phones'=>[]}
+    contact['name'] = "#{email['FirstName']} #{email['LastName']}"
+
+    phone1 = email.has_key('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => "office"} : nil
+    email1 = email.has_key('Email')        ? {"email" => email['Email'],        "type" => "office"} : nil
+
+    contact['emails'] << email1 if email1
+    contact['phones'] << phone1 if phone1
+
+    if email1 or phone1
+      new_lead['contacts'] << contact
+    end
+  end
+
+  client.create_lead(new_lead)
+end
