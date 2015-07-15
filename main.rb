@@ -56,7 +56,7 @@ lead_emails.map! do |email|
     memo[x[0]] = x[1]
     memo
   end
-  attr['email_body'] = email_body
+  attr['email_body'] = email_body.gsub(%r{<br />}, "\n")
   attr
 end
 
