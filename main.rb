@@ -45,7 +45,7 @@ if USERNAME.nil? or PASSWORD.nil?
 end
 
 gmail = Gmail.connect(USERNAME, PASSWORD)
-some_time_ago = 24.hours.ago.strftime('%Y%m%d')
+some_time_ago = 1.hours.ago.strftime('%Y%m%d')
 lead_emails = gmail.inbox.search(gm: "subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
 
 lead_emails.map! do |email|
@@ -60,15 +60,19 @@ lead_emails.map! do |email|
   attr
 end
 
-total_attr = []
-lead_emails.each do |email|
-  total_attr << email.keys
-end
-total_attr.flatten!
-total_attr.uniq!
-puts total_attr.join(', ')
+## Testing:
+last_lead_emails = []
+last_lead_emails << lead_emails.last
+lead_emails = last_lead_emails
 
-exit
+#total_attr = []
+#lead_emails.each do |email|
+#  total_attr << email.keys
+#end
+#total_attr.flatten!
+#total_attr.uniq!
+#puts total_attr.join(', ')
+
 ## #Goals
 ## => Have a contact name
 ## => Have a contact number (if possible)
@@ -80,15 +84,15 @@ client = Closeio::Client.new(CLOSEIO_API)
 lead_emails.each do |email|
   new_lead = gen_new_lead_template
 
-  new_lead['custom']['Student First Name'] = email['StudentFirstName'] if email.has_key('StudentFirstName')
-  new_lead['custom']['Student Last Name']  = email['StudentLastName']  if email.has_key('StudentLastName')
+  new_lead['custom']['Student First Name'] = email['StudentFirstName'] if email.has_key?('StudentFirstName')
+  new_lead['custom']['Student Last Name']  = email['StudentLastName']  if email.has_key?('StudentLastName')
 
-  if email.has_key('Phone1Number') or email.has_key('Email')
+  if email.has_key?('Phone1Number') or email.has_key?('Email')
     contact = {'emails'=>[],'phones'=>[]}
     contact['name'] = "#{email['FirstName']} #{email['LastName']}"
 
-    phone1 = email.has_key('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => "office"} : nil
-    email1 = email.has_key('Email')        ? {"email" => email['Email'],        "type" => "office"} : nil
+    phone1 = email.has_key?('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => "office"} : nil
+    email1 = email.has_key?('Email')        ? {"email" => email['Email'],        "type" => "office"} : nil
 
     contact['emails'] << email1 if email1
     contact['phones'] << phone1 if phone1
@@ -98,5 +102,8 @@ lead_emails.each do |email|
     end
   end
 
-  client.create_lead(new_lead)
+  created_lead = client.create_lead(new_lead)
+
+  new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
+  client.create_note(new_note)
 end
