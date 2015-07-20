@@ -18,7 +18,7 @@ def gen_new_lead_template
 
   #new_lead['display_name'] = 'BlankNameError'
   new_lead['status_id'] = 'stat_3h8Vm5jpZ72TZckGPAil86UKEhKE17SmsgcGOngTgNm'
-  new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'Inbound - TPR'}
+  new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'WEB Inbound - TPR'}
   new_lead['status_label'] = 'New'
   new_lead['contacts'] = []
 
@@ -45,7 +45,7 @@ if USERNAME.nil? or PASSWORD.nil?
 end
 
 gmail = Gmail.connect(USERNAME, PASSWORD)
-some_time_ago = 1.hours.ago.strftime('%Y%m%d')
+some_time_ago = 100.hours.ago.strftime('%Y%m%d')
 lead_emails = gmail.inbox.search(gm: "subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
 
 lead_emails.map! do |email|
@@ -61,9 +61,9 @@ lead_emails.map! do |email|
 end
 
 ## Testing:
-last_lead_emails = []
-last_lead_emails << lead_emails.last
-lead_emails = last_lead_emails
+#last_lead_emails = []
+#last_lead_emails << lead_emails.last
+#lead_emails = last_lead_emails
 
 #total_attr = []
 #lead_emails.each do |email|
@@ -91,7 +91,7 @@ lead_emails.each do |email|
     contact = {'emails'=>[],'phones'=>[]}
     contact['name'] = "#{email['FirstName']} #{email['LastName']}"
 
-    phone1 = email.has_key?('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => "office"} : nil
+    phone1 = email.has_key?('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => (email['Phone1Type'] ? email['Phone1Type'] : "office")} : nil
     email1 = email.has_key?('Email')        ? {"email" => email['Email'],        "type" => "office"} : nil
 
     contact['emails'] << email1 if email1
