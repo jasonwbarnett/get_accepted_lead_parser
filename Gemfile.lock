@@ -39,10 +39,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  activesupport (~> 4.2.3)
+  activesupport (~> 4.2.0)
   closeio (~> 2.4.0)
   gmail (~> 0.5.0)
-  oj (~> 2.12.10)
+  oj (~> 2.12.0)
 
 BUNDLED WITH
    1.10.5
