@@ -1,7 +1,20 @@
 #!/usr/bin/env ruby
 require 'google/api_client/client_secrets'
+require 'google/api_client/auth/installed_app'
 require 'google/apis/gmail_v1'
 require 'launchy'
+
+
+client = Google::APIClient.new
+flow = Google::APIClient::InstalledAppFlow.new(
+  client_id: '440182892791-stn3ro59rkopd6mo0jkaeituvqq392aj.apps.googleusercontent.com',
+  client_secret: 'Ogn6VFtAs25HZndhnlKqQJXO',
+  scope: 'https://mail.google.com/ https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.readonly'
+)
+authorization = flow.authorize
+#client.authorization = flow.authorize
+
+exit
 
 client_secrets = Google::APIClient::ClientSecrets.load(File.expand_path("~/client_secret_440182892791-stn3ro59rkopd6mo0jkaeituvqq392aj.apps.googleusercontent.com.json"))
 auth_client = client_secrets.to_authorization
