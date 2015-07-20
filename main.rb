@@ -50,11 +50,11 @@ if USERNAME.nil? or PASSWORD.nil?
 end
 
 gmail = Gmail.connect(USERNAME, PASSWORD)
-some_time_ago = 96.hours.ago.strftime('%Y%m%d')
-lead_emails = gmail.inbox.search(gm: "subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
+some_time_ago = 1.hours.ago
+lead_emails = gmail.inbox.search(gm: "subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago.strftime('%Y%m%d')}")
 
 lead_emails.map! do |email|
-  if email.message.date.to_time < 96.hours.ago
+  if email.message.date.to_time < some_time_ago
     nil
   else
   email_body = email.message.body.to_s
@@ -66,6 +66,7 @@ lead_emails.map! do |email|
   end
   attr['email_body'] = email_body.gsub(%r{<br />}, "\n").encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
   attr['date'] = email.message.date.to_time
+  attr['message_id'] = email.message.message_id
   attr
   end
 end
