@@ -3,6 +3,7 @@ require 'yaml'
 require 'optparse'
 require 'ostruct'
 require 'logger'
+require 'active_support/all'
 require 'google/api_client/client_secrets'
 require 'google/api_client/auth/installed_app'
 require 'google/apis/gmail_v1'
@@ -128,9 +129,18 @@ def main
 
   begin
     messages = gmail.list_user_messages(options.email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted'")
-    msg =  messages.messages.first
-    msg_data = gmail.get_user_message(options.email, msg.id) if !msg.nil?
-    p msg_data
+    message_id =  messages.messages.first.id
+    message = gmail.get_user_message(options.email, message_id) if !message_id.nil?
+
+    # Specifics
+    email_body = message.payload.body.data
+    date       = message.payload.headers.find { |x| x.name == 'Date' }.value.to_time
+    message_id = message.payload.headers.find { |x| x.name == 'Message-ID' }.value
+
+    @logger.debug(email_body)
+    @logger.debug(date)
+    @logger.debug(message_id)
+
   rescue Google::Apis::ClientError => e
     @logger.debug(e.message)
   end
