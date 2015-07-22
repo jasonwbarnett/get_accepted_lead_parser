@@ -3,7 +3,7 @@ PWD = File.expand_path(File.dirname(__FILE__))
 $:.unshift(PWD)
 
 require 'google_oauth2'
-require 'celluloid/autostart'
+require 'celluloid/current'
 require 'oj'
 require 'logger'
 require 'yaml'
@@ -16,6 +16,7 @@ require 'active_support/all'
 # close.io ruby gem: https://github.com/taylorbrooks/closeio
 # Gmail advanced search: https://support.google.com/mail/answer/7190?hl=en
 
+Celluloid.logger.level = Logger::WARN
 module Enumerable
   # Simple parallel map using Celluloid::Futures
   def pmap(&block)
