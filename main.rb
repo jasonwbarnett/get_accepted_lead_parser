@@ -105,12 +105,6 @@ end
 closeio = Closeio::Client.new(CLOSEIO_API, false)
 
 lead_emails.pmap do |email|
-  threshold = '2015-07-22 13:07:17 -0700'.to_time
-  unless email['date'] > threshold
-    @logger.debug("#main :: skipping message #{email['message_id']}")
-    next
-  end
-
   new_lead = gen_new_lead_template
 
   new_lead['custom']['Student First Name'] = email['StudentFirstName'].to_s if email.has_key?('StudentFirstName')
@@ -135,9 +129,15 @@ lead_emails.pmap do |email|
 
   ## add label
   gmail_message = email['gmail_message']
-  modify_message_request = Google::Apis::GmailV1::ModifyMessageRequest.new
-  modify_message_request.add_label_ids = [gmail_label.id]
-  gmail.modify_message(options.email, gmail_message.id, modify_message_request)
+  unless gmail_message.label_ids.include?(gmail_label.id)
+    @logger.info(%Q{Applying "%s" label to email} % gmail_label.name)
+    modify_message_request = Google::Apis::GmailV1::ModifyMessageRequest.new
+    modify_message_request.add_label_ids = [gmail_label.id]
+    gmail.modify_message(options.email, gmail_message.id, modify_message_request)
+  else
+    @logger.debug(%Q{skipping message because it is labeled "%s" already} % gmail_label.name)
+    next
+  end
 
   # Create lead in Close.io
   created_lead = closeio.create_lead(Oj.dump(new_lead))
