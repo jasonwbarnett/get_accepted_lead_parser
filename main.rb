@@ -128,7 +128,13 @@ lead_emails = get_lead_emails(options.email)
 
 closeio = Closeio::Client.new(CLOSEIO_API, false)
 
-lead_emails.each do |email|
+lead_emails.pmap do |email|
+  threshold = '2015-07-22 11:51:00 PDT'.to_time
+  unless email['date'] > threshold
+    @logger.debug("#main :: skipping message #{email['message_id']}")
+    next
+  end
+
   new_lead = gen_new_lead_template
 
   new_lead['custom']['Student First Name'] = email['StudentFirstName'].to_s if email.has_key?('StudentFirstName')
@@ -150,6 +156,8 @@ lead_emails.each do |email|
   end
   @logger.debug("Date: %s; Message-ID: %s" % [email['date'], email['message_id']])
   @logger.debug(new_lead)
+
+  ## add label
 
   created_lead = closeio.create_lead(Oj.dump(new_lead))
 
