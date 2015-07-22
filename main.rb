@@ -3,6 +3,7 @@ PWD = File.expand_path(File.dirname(__FILE__))
 $:.unshift(PWD)
 
 require 'google_oauth2'
+require 'gmailv1'
 require 'celluloid/current'
 require 'oj'
 require 'logger'
@@ -75,21 +76,16 @@ def get_lead_emails(email)
       @logger.debug("Grabbing message #{message_id} from Gmail.")
       message = gmail.get_user_message(email, message_id)
 
-      # Specifics
-      email_body = message.payload.body.data
-      date       = message.payload.headers.find { |x| x.name == 'Date' }.value.to_time
-      message_id = message.payload.headers.find { |x| x.name == 'Message-ID' }.value
-
-      email_details = email_body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
+      email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
       email_details = email_details.inject({}) do |memo,x|
         x = x.split(':').map { |x| x.strip }
         memo[x[0]] = x[1]
         memo
       end
 
-      email_details['body'] = email_body
-      email_details['date'] = date
-      email_details['message_id'] = message_id
+      email_details['body'] = message.body
+      email_details['date'] = message.date
+      email_details['message_id'] = message.message_id
 
       email_details
     end
