@@ -145,5 +145,3 @@ def main
     @logger.debug(e.message)
   end
 end
-
-main
