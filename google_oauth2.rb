@@ -20,7 +20,7 @@ def parse_opts(args)
     opts.separator ''
     opts.separator 'Required Options:'
 
-    opts.on('-u', '--user-email EMAIL',
+    opts.on('-e', '--email-address EMAIL',
             'Email address of the user whose inbox you wish to search'
             ) { |v| options.email = v }
 
@@ -30,6 +30,10 @@ def parse_opts(args)
     opts.on('-n', '--dry-run',
             'perform a trial run with no changes made'
             ) { options.dry_run = true }
+
+    opts.on('-l', '--label LABEL',
+            'Apply gmail label to emails who have been parsed and uploaded to Close.io'
+            ) { |v| options.label_name = v }
 
     opts.on('-x', '--debug',
             'Enables some helpful debugging output.'
@@ -134,4 +138,52 @@ def get_all_messages(gmail, email)
 
   @logger.info("Found #{messages.length} emails in Gmail")
   messages
+end
+
+def get_lead_emails(gmail, email)
+  begin
+    messages = get_all_messages(gmail, email)
+
+    @logger.info("Fetching and parsing emails")
+    lead_emails = messages.pmap do |msg|
+      message_id = msg.id
+      @logger.debug("Grabbing message #{message_id} from Gmail.")
+      message = gmail.get_user_message(email, message_id)
+
+      email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
+      email_details = email_details.inject({}) do |memo,x|
+        x = x.split(':').map { |x| x.strip }
+        memo[x[0]] = x[1]
+        memo
+      end
+
+      email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
+      email_details['date'] = message.date
+      email_details['message_id'] = message.message_id
+
+      email_details
+    end
+    @logger.info("Finished fetching and parsing emails")
+  rescue Google::Apis::ClientError => e
+    @logger.debug(e.message)
+  end
+
+  lead_emails
+end
+
+def get_label(gmail, email, name)
+  list_labels_response = gmail.list_user_labels(email)
+  labels = list_labels_response.labels
+  labels.select { |x| x.type == "user" }
+
+  label = labels.find { |x| x.name.strip.downcase == name.strip.downcase }
+end
+
+def create_label(gmail, email, name)
+  new_label = Google::Apis::GmailV1::Label.new
+  new_label.label_list_visibility = "labelShow"
+  new_label.message_list_visibility = "show"
+  new_label.name = name
+
+  gmail.create_user_label(email, new_label)
 end

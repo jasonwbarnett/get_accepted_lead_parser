@@ -36,8 +36,8 @@ def gen_new_lead_template
   #new_lead['display_name'] = 'BlankNameError'
   new_lead['status_id'] = 'stat_3h8Vm5jpZ72TZckGPAil86UKEhKE17SmsgcGOngTgNm'
   new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'WEB Inbound - TPR'}
+  new_lead['contacts']  = []
   new_lead['status_label'] = 'New'
-  new_lead['contacts'] = []
 
   new_lead
 end
@@ -58,43 +58,6 @@ def check_deps
     @logger.error("Missing the close.io API Key \"#{CONFIG_FILE}\" configuration, exiting...")
     exit 2
   end
-end
-
-def get_lead_emails(email)
-  authorization = get_auth(email)
-  @logger.debug(authorization)
-
-  gmail = Google::Apis::GmailV1::GmailService.new
-  gmail.authorization = authorization
-
-  begin
-    messages = get_all_messages(gmail, email)
-
-    @logger.info("Fetching and parsing emails")
-    lead_emails = messages.pmap do |msg|
-      message_id = msg.id
-      @logger.debug("Grabbing message #{message_id} from Gmail.")
-      message = gmail.get_user_message(email, message_id)
-
-      email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
-      email_details = email_details.inject({}) do |memo,x|
-        x = x.split(':').map { |x| x.strip }
-        memo[x[0]] = x[1]
-        memo
-      end
-
-      email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
-      email_details['date'] = message.date
-      email_details['message_id'] = message.message_id
-
-      email_details
-    end
-    @logger.info("Finished fetching and parsing emails")
-  rescue Google::Apis::ClientError => e
-    @logger.debug(e.message)
-  end
-
-  lead_emails
 end
 
 ######################
@@ -124,11 +87,25 @@ CLOSEIO_API = fetch_closeio_api_key
 check_deps
 options = parse_opts(ARGV)
 @logger.debug("#main :: options: #{options}")
-lead_emails = get_lead_emails(options.email)
+
+authorization = get_auth(options.email)
+@logger.debug(authorization)
+
+gmail = Google::Apis::GmailV1::GmailService.new
+gmail.authorization = authorization
+
+lead_emails = get_lead_emails(gmail, options.email)
+
+if gmail_label = get_label(gmail, options.email, options.label_name)
+  @logger.debug("Found label: %s" % gmail_label)
+elsif gmail_label = create_label(gmail, options.email, options.label_name)
+  @logger.debug("Created label: %s" % gmail_label)
+end
 
 closeio = Closeio::Client.new(CLOSEIO_API, false)
 
 lead_emails.pmap do |email|
+  threshold = '2015-07-22 13:07:17 -0700'.to_time
   threshold = '2015-07-22 11:51:00 PDT'.to_time
   unless email['date'] > threshold
     @logger.debug("#main :: skipping message #{email['message_id']}")
@@ -161,7 +138,7 @@ lead_emails.pmap do |email|
 
   created_lead = closeio.create_lead(Oj.dump(new_lead))
 
-  new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
+  new_note = {"lead_id" => created_lead['id'], "note" => email['body']}
   @logger.debug(new_note)
   closeio.create_note(Oj.dump(new_note))
 end
