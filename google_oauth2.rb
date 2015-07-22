@@ -122,7 +122,7 @@ def get_all_messages(gmail, email)
   some_time_ago = 1.day.ago.strftime('%Y/%m/%d')
 
   search_query = "in:inbox subject:'New Lead from The Princeton Review Get Accepted' after:#{some_time_ago}"
-  @logger.info('Searching emails in Gmail, search query: "%s"' % search_query)
+  @logger.info('Searching Gmail, search query: "%s"' % search_query)
 
   list_messages_response = gmail.list_user_messages(email, q: search_query)
   messages += list_messages_response.messages
@@ -132,6 +132,6 @@ def get_all_messages(gmail, email)
     messages += list_messages_response.messages
   end
 
-  @logger.info("Finished fetching #{messages.length} emails from Gmail")
+  @logger.info("Found #{messages.length} emails in Gmail")
   messages
 end

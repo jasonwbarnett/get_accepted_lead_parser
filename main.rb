@@ -56,7 +56,6 @@ CONFIG_FILE = File.expand_path('~/.getaccepted.yml')
 CLOSEIO_API = fetch_closeio_api_key
 
 def get_lead_emails
-  check_deps
   options = parse_opts(ARGV)
   @logger.debug("#main :: options: #{options}")
 
@@ -69,6 +68,7 @@ def get_lead_emails
   begin
     messages = get_all_messages(gmail, options.email)
 
+    @logger.info("Fetching and parsing emails")
     lead_emails = messages.map do |msg|
       message_id = msg.id
       @logger.debug("Grabbing message #{message_id} from Gmail.")
@@ -92,6 +92,7 @@ def get_lead_emails
 
       email_details
     end
+    @logger.info("Finished fetching and parsing emails")
   rescue Google::Apis::ClientError => e
     @logger.debug(e.message)
   end
@@ -121,6 +122,7 @@ end
 ######################
 ## MAIN
 ######################
+check_deps
 lead_emails = get_lead_emails
 
 client = Closeio::Client.new(CLOSEIO_API, false)
