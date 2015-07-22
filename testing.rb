@@ -36,8 +36,8 @@ def gen_new_lead_template
   #new_lead['display_name'] = 'BlankNameError'
   new_lead['status_id'] = 'stat_3h8Vm5jpZ72TZckGPAil86UKEhKE17SmsgcGOngTgNm'
   new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'WEB Inbound - TPR'}
+  new_lead['contacts']  = []
   new_lead['status_label'] = 'New'
-  new_lead['contacts'] = []
 
   new_lead
 end
@@ -58,43 +58,6 @@ def check_deps
     @logger.error("Missing the close.io API Key \"#{CONFIG_FILE}\" configuration, exiting...")
     exit 2
   end
-end
-
-def get_lead_emails(email)
-  authorization = get_auth(email)
-  @logger.debug(authorization)
-
-  gmail = Google::Apis::GmailV1::GmailService.new
-  gmail.authorization = authorization
-
-  begin
-    messages = get_all_messages(gmail, email)
-
-    @logger.info("Fetching and parsing emails")
-    lead_emails = messages.pmap do |msg|
-      message_id = msg.id
-      @logger.debug("Grabbing message #{message_id} from Gmail.")
-      message = gmail.get_user_message(email, message_id)
-
-      email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
-      email_details = email_details.inject({}) do |memo,x|
-        x = x.split(':').map { |x| x.strip }
-        memo[x[0]] = x[1]
-        memo
-      end
-
-      email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
-      email_details['date'] = message.date
-      email_details['message_id'] = message.message_id
-
-      email_details
-    end
-    @logger.info("Finished fetching and parsing emails")
-  rescue Google::Apis::ClientError => e
-    @logger.debug(e.message)
-  end
-
-  lead_emails
 end
 
 ######################
@@ -122,7 +85,14 @@ CLOSEIO_API = fetch_closeio_api_key
 ## MAIN
 ######################
 check_deps
-ARGV = ["-u", "brad@get-accepted.com", "-x"]
+ARGV = ["-e", "brad@get-accepted.com", "-x"]
 options = parse_opts(ARGV)
 @logger.debug("#main :: options: #{options}")
-lead_emails = get_lead_emails(options.email)
+
+authorization = get_auth(options.email)
+@logger.debug(authorization)
+
+gmail = Google::Apis::GmailV1::GmailService.new
+gmail.authorization = authorization
+
+lead_emails = get_lead_emails(gmail, options.email)

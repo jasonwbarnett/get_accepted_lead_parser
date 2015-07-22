@@ -160,6 +160,7 @@ def get_lead_emails(gmail, email)
       email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
       email_details['date'] = message.date
       email_details['message_id'] = message.message_id
+      email_details['gmail_message'] = message
 
       email_details
     end

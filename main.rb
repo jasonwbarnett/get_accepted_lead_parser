@@ -97,16 +97,15 @@ gmail.authorization = authorization
 lead_emails = get_lead_emails(gmail, options.email)
 
 if gmail_label = get_label(gmail, options.email, options.label_name)
-  @logger.debug("Found label: %s" % gmail_label)
+  @logger.debug("Found label: %s" % gmail_label.name)
 elsif gmail_label = create_label(gmail, options.email, options.label_name)
-  @logger.debug("Created label: %s" % gmail_label)
+  @logger.debug("Created label: %s" % gmail_label.name)
 end
 
 closeio = Closeio::Client.new(CLOSEIO_API, false)
 
 lead_emails.pmap do |email|
   threshold = '2015-07-22 13:07:17 -0700'.to_time
-  threshold = '2015-07-22 11:51:00 PDT'.to_time
   unless email['date'] > threshold
     @logger.debug("#main :: skipping message #{email['message_id']}")
     next
@@ -135,9 +134,15 @@ lead_emails.pmap do |email|
   @logger.debug(new_lead)
 
   ## add label
+  gmail_message = email['gmail_message']
+  modify_message_request = Google::Apis::GmailV1::ModifyMessageRequest.new
+  modify_message_request.add_label_ids = [gmail_label.id]
+  gmail.modify_message(options.email, gmail_message.id, modify_message_request)
 
+  # Create lead in Close.io
   created_lead = closeio.create_lead(Oj.dump(new_lead))
 
+  # Create note for the new lead in Close.io
   new_note = {"lead_id" => created_lead['id'], "note" => email['body']}
   @logger.debug(new_note)
   closeio.create_note(Oj.dump(new_note))
