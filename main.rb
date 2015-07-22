@@ -133,6 +133,7 @@ lead_emails.pmap do |email|
     @logger.info(%Q{Applying "%s" label to email} % gmail_label.name)
     modify_message_request = Google::Apis::GmailV1::ModifyMessageRequest.new
     modify_message_request.add_label_ids = [gmail_label.id]
+    modify_message_request.remove_label_ids = %w[INBOX]
     gmail.modify_message(options.email, gmail_message.id, modify_message_request)
   else
     @logger.debug(%Q{skipping message because it is labeled "%s" already} % gmail_label.name)
