@@ -145,7 +145,7 @@ lead_emails.each do |email|
       new_lead['contacts'] << contact
     end
   end
-  @logger.debug("%s %s" % [email['date'], email['message_id']])
+  @logger.debug("Date: %s; Message-ID: %s" % [email['date'], email['message_id']])
   @logger.debug(new_lead)
 
   #created_lead = client.create_lead(Oj.dump(new_lead))
