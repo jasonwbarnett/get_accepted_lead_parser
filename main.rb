@@ -151,9 +151,9 @@ lead_emails.each do |email|
   @logger.debug("Date: %s; Message-ID: %s" % [email['date'], email['message_id']])
   @logger.debug(new_lead)
 
-  #created_lead = closeio.create_lead(Oj.dump(new_lead))
+  created_lead = closeio.create_lead(Oj.dump(new_lead))
 
-  #new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
-  #@logger.debug(new_note)
-  #closeio.create_note(Oj.dump(new_note))
+  new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
+  @logger.debug(new_note)
+  closeio.create_note(Oj.dump(new_note))
 end
