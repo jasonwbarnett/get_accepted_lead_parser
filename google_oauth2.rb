@@ -117,31 +117,19 @@ def get_auth(email)
   authorization
 end
 
-def main
-  options = parse_opts(ARGV)
-  @logger.debug("#main :: options: #{options}")
+def get_all_messages(gmail, email)
+  @logger.info("Fetching all emails from Gmail")
+  messages = []
+  some_time_ago = 1.day.ago.strftime('%Y%m%d')
 
-  authorization = get_auth(options.email)
-  @logger.debug(authorization)
+  list_messages_response = gmail.list_user_messages(email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
+  messages += list_messages_response.messages
 
-  gmail = Google::Apis::GmailV1::GmailService.new
-  gmail.authorization = authorization
-
-  begin
-    messages = gmail.list_user_messages(options.email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted'")
-    message_id =  messages.messages.first.id
-    message = gmail.get_user_message(options.email, message_id) if !message_id.nil?
-
-    # Specifics
-    email_body = message.payload.body.data
-    date       = message.payload.headers.find { |x| x.name == 'Date' }.value.to_time
-    message_id = message.payload.headers.find { |x| x.name == 'Message-ID' }.value
-
-    @logger.debug(email_body)
-    @logger.debug(date)
-    @logger.debug(message_id)
-
-  rescue Google::Apis::ClientError => e
-    @logger.debug(e.message)
+  while list_messages_response.next_page_token
+    list_messages_response = gmail.list_user_messages(email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}", page_token: list_messages_response.next_page_token)
+    messages += list_messages_response.messages
   end
+
+  @logger.info("Finished fetching all emails from Gmail")
+  messages
 end

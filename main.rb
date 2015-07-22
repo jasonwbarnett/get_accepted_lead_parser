@@ -19,9 +19,6 @@ require 'active_support/all'
 #   - Read and parse emails
 #   - Create new tasks in close.io via API with data parsed from emails
 
-@logger = Logger.new(STDOUT)
-@logger.level = Logger::DEBUG
-
 def gen_new_lead_template
   new_lead = {}
 
@@ -52,10 +49,13 @@ def check_deps
   end
 end
 
+######################
+## CONSTANTS
+######################
 CONFIG_FILE = File.expand_path('~/.getaccepted.yml')
 CLOSEIO_API = fetch_closeio_api_key
 
-def main
+def get_lead_emails
   check_deps
   options = parse_opts(ARGV)
   @logger.debug("#main :: options: #{options}")
@@ -66,47 +66,38 @@ def main
   gmail = Google::Apis::GmailV1::GmailService.new
   gmail.authorization = authorization
 
-  some_time_ago = 1.day.ago
   begin
-    messages = gmail.list_user_messages(options.email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago.strftime('%Y%m%d')}")
-    message_id =  messages.messages.first.id
-    message = gmail.get_user_message(options.email, message_id) if !message_id.nil?
+    messages = get_all_messages(gmail, options.email)
 
-    # Specifics
-    email_body = message.payload.body.data
-    date       = message.payload.headers.find { |x| x.name == 'Date' }.value.to_time
-    message_id = message.payload.headers.find { |x| x.name == 'Message-ID' }.value
+    lead_emails = messages.map do |msg|
+      message_id = msg.id
+      @logger.debug("Grabbing message #{message_id} from Gmail.")
+      message = gmail.get_user_message(options.email, message_id)
 
-    @logger.debug(email_body)
-    @logger.debug(date)
-    @logger.debug(message_id)
+      # Specifics
+      email_body = message.payload.body.data
+      date       = message.payload.headers.find { |x| x.name == 'Date' }.value.to_time
+      message_id = message.payload.headers.find { |x| x.name == 'Message-ID' }.value
 
+      email_details = email_body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
+      email_details = email_details.inject({}) do |memo,x|
+        x = x.split(':').map { |x| x.strip }
+        memo[x[0]] = x[1]
+        memo
+      end
+
+      email_details['body'] = email_body
+      email_details['date'] = date
+      email_details['message_id'] = message_id
+
+      email_details
+    end
   rescue Google::Apis::ClientError => e
     @logger.debug(e.message)
   end
+
+  lead_emails
 end
-
-lead_emails.map! do |email|
-  if email.message.date.to_time < some_time_ago
-    nil
-  else
-
-  email_body = email.message.body.to_s
-  attr = email.message.body.to_s.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
-  attr = attr.inject({}) do |memo,x|
-    x = x.split(':').map { |x| x.strip }
-    memo[x[0]] = x[1]
-    memo
-  end
-
-  attr['email_body'] = email_body.gsub(%r{<br />}, "\n").encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
-  attr['date'] = email.message.date.to_time
-  attr['message_id'] = email.message.message_id
-  attr
-  end
-end
-
-lead_emails.compact!
 
 ## Testing:
 #last_lead_emails = []
@@ -126,6 +117,11 @@ lead_emails.compact!
 ## => Have a contact number (if possible)
 ## => Have a contact email (if possible)
 ## => Lead Source = Inbound TPR
+
+######################
+## MAIN
+######################
+lead_emails = get_lead_emails
 
 client = Closeio::Client.new(CLOSEIO_API)
 
@@ -149,11 +145,12 @@ lead_emails.each do |email|
       new_lead['contacts'] << contact
     end
   end
-  @logger.debug(email['date'])
+  @logger.debug("%s %s" % [email['date'], email['message_id']])
   @logger.debug(new_lead)
 
-  created_lead = client.create_lead(Oj.dump(new_lead))
+  #created_lead = client.create_lead(Oj.dump(new_lead))
 
-  new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
-  client.create_note(Oj.dump(new_note))
+  #new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
+  #@logger.debug(new_note)
+  #client.create_note(Oj.dump(new_note))
 end
