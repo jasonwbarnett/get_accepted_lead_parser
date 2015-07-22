@@ -130,7 +130,7 @@ options = parse_opts(ARGV)
 @logger.debug("#main :: options: #{options}")
 lead_emails = get_lead_emails(options.email)
 
-client = Closeio::Client.new(CLOSEIO_API, false)
+closeio = Closeio::Client.new(CLOSEIO_API, false)
 
 lead_emails.each do |email|
   new_lead = gen_new_lead_template
@@ -155,9 +155,9 @@ lead_emails.each do |email|
   @logger.debug("Date: %s; Message-ID: %s" % [email['date'], email['message_id']])
   @logger.debug(new_lead)
 
-  #created_lead = client.create_lead(Oj.dump(new_lead))
+  #created_lead = closeio.create_lead(Oj.dump(new_lead))
 
   #new_note = {"lead_id" => created_lead['id'], "note" => email['email_body']}
   #@logger.debug(new_note)
-  #client.create_note(Oj.dump(new_note))
+  #closeio.create_note(Oj.dump(new_note))
 end
