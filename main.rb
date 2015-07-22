@@ -123,7 +123,7 @@ end
 ######################
 lead_emails = get_lead_emails
 
-client = Closeio::Client.new(CLOSEIO_API)
+client = Closeio::Client.new(CLOSEIO_API, false)
 
 lead_emails.each do |email|
   new_lead = gen_new_lead_template

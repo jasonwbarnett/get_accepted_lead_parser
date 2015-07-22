@@ -118,18 +118,20 @@ def get_auth(email)
 end
 
 def get_all_messages(gmail, email)
-  @logger.info("Fetching all emails from Gmail")
   messages = []
-  some_time_ago = 1.day.ago.strftime('%Y%m%d')
+  some_time_ago = 1.day.ago.strftime('%Y/%m/%d')
 
-  list_messages_response = gmail.list_user_messages(email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}")
+  search_query = "in:inbox subject:'New Lead from The Princeton Review Get Accepted' after:#{some_time_ago}"
+  @logger.info('Searching emails in Gmail, search query: "%s"' % search_query)
+
+  list_messages_response = gmail.list_user_messages(email, q: search_query)
   messages += list_messages_response.messages
 
   while list_messages_response.next_page_token
-    list_messages_response = gmail.list_user_messages(email, q: "in:inbox subject:'New Lead from The Princeton Review Get Accepted' newer:#{some_time_ago}", page_token: list_messages_response.next_page_token)
+    list_messages_response = gmail.list_user_messages(email, q: search_query, page_token: list_messages_response.next_page_token)
     messages += list_messages_response.messages
   end
 
-  @logger.info("Finished fetching all emails from Gmail")
+  @logger.info("Finished fetching #{messages.length} emails from Gmail")
   messages
 end
