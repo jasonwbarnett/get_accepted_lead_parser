@@ -83,7 +83,7 @@ def get_lead_emails(email)
         memo
       end
 
-      email_details['body'] = message.body
+      email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
       email_details['date'] = message.date
       email_details['message_id'] = message.message_id
 
