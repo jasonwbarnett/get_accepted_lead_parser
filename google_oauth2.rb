@@ -125,7 +125,7 @@ def get_all_messages(gmail, email)
   @logger.info('Searching Gmail, search query: "%s"' % search_query)
 
   list_messages_response = gmail.list_user_messages(email, q: search_query)
-  messages += list_messages_response.messages
+  messages += list_messages_response.messages unless list_messages_response.messages.nil?
 
   while list_messages_response.next_page_token
     list_messages_response = gmail.list_user_messages(email, q: search_query, page_token: list_messages_response.next_page_token)
