@@ -140,9 +140,11 @@ lead_emails.pmap do |email|
   end
 
   # Create lead in Close.io
+  @logger.info("Creating lead, Message-ID: %s" % email.message_id)
   created_lead = closeio.create_lead(Oj.dump(new_lead))
 
   # Create note for the new lead in Close.io
+  @logger.info("Creating note for lead, Message-ID: %s" % email.message_id)
   new_note = {"lead_id" => created_lead['id'], "note" => email['body']}
   @logger.debug(new_note)
   closeio.create_note(Oj.dump(new_note))
