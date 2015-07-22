@@ -12,3 +12,9 @@
     new_label.name = "IMPORTED BY SCRIPT"
 
     gmail.create_user_label(email, new_label)
+
+## Apply label to message
+
+    modify_message_request = Google::Apis::GmailV1::ModifyMessageRequest.new
+    modify_message_request.add_label_ids = []
+    modify_message(options.email, gmail_message.id, modify_message_request)
