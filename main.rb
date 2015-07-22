@@ -3,6 +3,7 @@ PWD = File.expand_path(File.dirname(__FILE__))
 $:.unshift(PWD)
 
 require 'google_oauth2'
+require 'celluloid/autostart'
 require 'oj'
 require 'logger'
 require 'yaml'
@@ -14,6 +15,14 @@ require 'active_support/all'
 # Close.io API docs: http://developer.close.io/#Leads
 # close.io ruby gem: https://github.com/taylorbrooks/closeio
 # Gmail advanced search: https://support.google.com/mail/answer/7190?hl=en
+
+module Enumerable
+  # Simple parallel map using Celluloid::Futures
+  def pmap(&block)
+    futures = map { |elem| Celluloid::Future.new(elem, &block) }
+    futures.map(&:value)
+  end
+end
 
 # Goal:
 #   - Read and parse emails
@@ -69,7 +78,7 @@ def get_lead_emails
     messages = get_all_messages(gmail, options.email)
 
     @logger.info("Fetching and parsing emails")
-    lead_emails = messages.map do |msg|
+    lead_emails = messages.pmap do |msg|
       message_id = msg.id
       @logger.debug("Grabbing message #{message_id} from Gmail.")
       message = gmail.get_user_message(options.email, message_id)
