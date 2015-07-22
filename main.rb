@@ -16,6 +16,10 @@ require 'active_support/all'
 # close.io ruby gem: https://github.com/taylorbrooks/closeio
 # Gmail advanced search: https://support.google.com/mail/answer/7190?hl=en
 
+# Goal:
+#   - Read and parse emails
+#   - Create new tasks in close.io via API with data parsed from emails
+
 Celluloid.logger.level = Logger::WARN
 module Enumerable
   # Simple parallel map using Celluloid::Futures
@@ -24,10 +28,6 @@ module Enumerable
     futures.map(&:value)
   end
 end
-
-# Goal:
-#   - Read and parse emails
-#   - Create new tasks in close.io via API with data parsed from emails
 
 def gen_new_lead_template
   new_lead = {}
@@ -59,30 +59,21 @@ def check_deps
   end
 end
 
-######################
-## CONSTANTS
-######################
-CONFIG_FILE = File.expand_path('~/.getaccepted.yml')
-CLOSEIO_API = fetch_closeio_api_key
-
-def get_lead_emails
-  options = parse_opts(ARGV)
-  @logger.debug("#main :: options: #{options}")
-
-  authorization = get_auth(options.email)
+def get_lead_emails(email)
+  authorization = get_auth(email)
   @logger.debug(authorization)
 
   gmail = Google::Apis::GmailV1::GmailService.new
   gmail.authorization = authorization
 
   begin
-    messages = get_all_messages(gmail, options.email)
+    messages = get_all_messages(gmail, email)
 
     @logger.info("Fetching and parsing emails")
     lead_emails = messages.pmap do |msg|
       message_id = msg.id
       @logger.debug("Grabbing message #{message_id} from Gmail.")
-      message = gmail.get_user_message(options.email, message_id)
+      message = gmail.get_user_message(email, message_id)
 
       # Specifics
       email_body = message.payload.body.data
@@ -110,7 +101,9 @@ def get_lead_emails
   lead_emails
 end
 
-## Testing:
+######################
+## TESTING
+######################
 #last_lead_emails = []
 #last_lead_emails << lead_emails.last
 #lead_emails = last_lead_emails
@@ -123,17 +116,19 @@ end
 #total_attr.uniq!
 #puts total_attr.join(', ')
 
-## #Goals
-## => Have a contact name
-## => Have a contact number (if possible)
-## => Have a contact email (if possible)
-## => Lead Source = Inbound TPR
+######################
+## CONSTANTS
+######################
+CONFIG_FILE = File.expand_path('~/.getaccepted.yml')
+CLOSEIO_API = fetch_closeio_api_key
 
 ######################
 ## MAIN
 ######################
 check_deps
-lead_emails = get_lead_emails
+options = parse_opts(ARGV)
+@logger.debug("#main :: options: #{options}")
+lead_emails = get_lead_emails(options.email)
 
 client = Closeio::Client.new(CLOSEIO_API, false)
 
