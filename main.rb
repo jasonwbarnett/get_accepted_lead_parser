@@ -136,8 +136,8 @@ lead_emails.pmap do |email|
     modify_message_request.remove_label_ids = %w[INBOX]
     gmail.modify_message(options.email, gmail_message.id, modify_message_request)
   else
-    @logger.debug(%Q{skipping message because it is labeled "%s" already} % gmail_label.name)
-    next
+    #@logger.debug(%Q{skipping message because it is labeled "%s" already} % gmail_label.name)
+    #next
   end
 
   # Create lead in Close.io

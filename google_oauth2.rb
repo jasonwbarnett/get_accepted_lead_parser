@@ -123,9 +123,10 @@ end
 
 def get_all_messages(gmail, email)
   messages = []
-  some_time_ago = 1.day.ago.strftime('%Y/%m/%d')
+  #some_time_ago = 1.day.ago.strftime('%Y/%m/%d')
+  some_time_ago = 'July 28, 2015 @ 08:00 CDT'.to_time.strftime('%Y/%m/%d')
 
-  search_query = "in:inbox subject:'New Lead from The Princeton Review Get Accepted' after:#{some_time_ago}"
+  search_query = "from:donotreply@princetonreview.com after:#{some_time_ago}"
   @logger.info('Searching Gmail, search query: "%s"' % search_query)
 
   list_messages_response = gmail.list_user_messages(email, q: search_query)
