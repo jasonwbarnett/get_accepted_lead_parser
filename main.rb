@@ -107,12 +107,12 @@ closeio = Closeio::Client.new(CLOSEIO_API, false)
 lead_emails.pmap do |email|
   new_lead = gen_new_lead_template
 
-  new_lead['custom']['Student First Name'] = email['StudentFirstName'].to_s if email.has_key?('StudentFirstName')
-  new_lead['custom']['Student Last Name']  = email['StudentLastName'].to_s  if email.has_key?('StudentLastName')
+  new_lead['custom']['Student First Name'] = email['StudentFirstName'].to_s.titleize if email.has_key?('StudentFirstName')
+  new_lead['custom']['Student Last Name']  = email['StudentLastName'].to_s.titleize  if email.has_key?('StudentLastName')
 
   if email.has_key?('Phone1Number') or email.has_key?('Email')
     contact = {'emails'=>[],'phones'=>[]}
-    contact['name'] = "#{email['FirstName'].to_s} #{email['LastName'].to_s}"
+    contact['name'] = "#{email['FirstName'].to_s.titleize} #{email['LastName'].to_s.titleize}"
 
     phone1 = email.has_key?('Phone1Number') ? {"phone" => email['Phone1Number'], "type" => (email['Phone1Type'] ? email['Phone1Type'] : "office")} : nil
     email1 = email.has_key?('Email')        ? {"email" => email['Email'],        "type" => "office"} : nil
