@@ -35,7 +35,7 @@ def gen_new_lead_template
 
   #new_lead['display_name'] = 'BlankNameError'
   new_lead['status_id'] = 'stat_3h8Vm5jpZ72TZckGPAil86UKEhKE17SmsgcGOngTgNm'
-  new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Lead Source'=>'WEB Inbound - TPR'}
+  new_lead['custom']    = {'Owner'=>'Brad L Lide', 'Channel'=>'WEB Inbound - TPR'}
   new_lead['contacts']  = []
   new_lead['status_label'] = 'New'
 
