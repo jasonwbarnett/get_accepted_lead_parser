@@ -149,6 +149,7 @@ def get_lead_emails(gmail, email)
       message_id = msg.id
       @logger.debug("Grabbing message #{message_id} from Gmail.")
       message = gmail.get_user_message(email, message_id)
+      next if message.nil? or message.body.nil?
 
       email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
       email_details = email_details.inject({}) do |memo,x|
@@ -163,7 +164,7 @@ def get_lead_emails(gmail, email)
       email_details['gmail_message'] = message
 
       email_details
-    end
+    end.compact
     @logger.info("Finished fetching and parsing emails")
   rescue Google::Apis::ClientError => e
     @logger.debug(e.message)
