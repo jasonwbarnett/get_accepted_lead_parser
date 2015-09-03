@@ -3,6 +3,10 @@ class Google::Apis::GmailV1::Message
     self.payload.body.data
   end
 
+  def grasshoper_body
+    self.payload.parts.first.parts.first.body.data
+  end
+
   def date
     self.payload.headers.find { |x| x.name == 'Date' }.value.to_time
   end

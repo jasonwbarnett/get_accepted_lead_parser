@@ -125,7 +125,7 @@ def get_all_messages(gmail, email)
   messages = []
   some_time_ago = 1.day.ago.strftime('%Y/%m/%d')
 
-  search_query = "in:inbox from:donotreply@princetonreview.com after:#{some_time_ago}"
+  search_query = "in:inbox from:notifications@grasshopper.com after:#{some_time_ago}"
   @logger.info('Searching Gmail, search query: "%s"' % search_query)
 
   list_messages_response = gmail.list_user_messages(email, q: search_query)
@@ -151,14 +151,9 @@ def get_lead_emails(gmail, email)
       message = gmail.get_user_message(email, message_id)
       next if message.nil? or message.body.nil?
 
-      email_details = message.body.split('<br />').map { |x| x.strip }.reject { |x| x.empty? }[1..-1]
-      email_details = email_details.inject({}) do |memo,x|
-        x = x.split(':').map { |x| x.strip }
-        memo[x[0]] = x[1]
-        memo
-      end
-
-      email_details['body'] = message.body.gsub(%r{<br */>}, "\n")
+      email_details = {}
+      email_details['caller_number'] = message.grasshoper_body[/Caller: ([0-9-]+)/].sub('Caller: ', '')
+      email_details['transcription'] = message.grasshoper_body[/"[^"]+"/]
       email_details['date'] = message.date
       email_details['message_id'] = message.message_id
       email_details['gmail_message'] = message
